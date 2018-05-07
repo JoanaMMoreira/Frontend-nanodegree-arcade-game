@@ -9,8 +9,9 @@
  * drawn but that is not the case. What's really happening is the entire "scene"
  * is being drawn over and over, presenting the illusion of animation.
  *
- * This engine makes the canvas' context (ctx) object globally available to make 
- * writing app.js a little simpler to work with.
+ * This engine is available globally via the Engine variable and it also makes
+ * the canvas' context (ctx) object globally available to make writing app.js
+ * a little simpler to work with.
  */
 
 var Engine = (function(global) {
@@ -22,7 +23,7 @@ var Engine = (function(global) {
         win = global.window,
         canvas = doc.createElement('canvas'),
         ctx = canvas.getContext('2d'),
-        lastTime;
+        lastTime, requestAnimationFrameID;
 
     canvas.width = 505;
     canvas.height = 606;
@@ -55,7 +56,7 @@ var Engine = (function(global) {
         /* Use the browser's requestAnimationFrame function to call this
          * function again as soon as the browser is able to draw another frame.
          */
-        win.requestAnimationFrame(main);
+        requestAnimationFrameID = win.requestAnimationFrame(main);
     }
 
     /* This function does some initial setup that should only occur once,
@@ -79,8 +80,31 @@ var Engine = (function(global) {
      */
     function update(dt) {
         updateEntities(dt);
-        // checkCollisions();
+        checkCollisions();
     }
+
+    function checkCollisions() {
+      var heartCollision, heartVisiblity;
+       function between(x, min, max) {
+          return x >= min && x <= max;
+        }
+       allEnemies.forEach(function(enemy) {
+           if(between(player.x, (enemy.x - 60), (enemy.x + 60)) && between(player.y, (enemy.y - 10), (enemy.y + 10))) {
+             player.life--;
+             init();
+           }
+       });
+       if(between(player.x, (gem.x - 60), (gem.x + 60)) && between(player.y, (gem.y - 10), (gem.y + 10))) {
+         player.score++;
+         gem.update();
+         init();
+       }
+       if(between(player.x, (heart.x - 60), (heart.x + 60)) && between(player.y, (heart.y - 10), (heart.y + 10))) {
+         player.life++;
+         heart.notVisible = true;
+         reset();
+       }
+     }
 
     /* This is called by the update function and loops through all of the
      * objects within your allEnemies array as defined in app.js and calls
@@ -94,6 +118,7 @@ var Engine = (function(global) {
             enemy.update(dt);
         });
         player.update();
+        heart.update();
     }
 
     /* This function initially draws the "game level", it will then call
@@ -117,9 +142,6 @@ var Engine = (function(global) {
             numRows = 6,
             numCols = 5,
             row, col;
-        
-        // Before drawing, clear existing canvas
-        ctx.clearRect(0,0,canvas.width,canvas.height)
 
         /* Loop through the number of rows and columns we've defined above
          * and, using the rowImages array, draw the correct image for that
@@ -146,13 +168,15 @@ var Engine = (function(global) {
      * on your enemy and player entities within app.js
      */
     function renderEntities() {
+        gem.render();
+        heart.render();
         /* Loop through all of the objects within the allEnemies array and call
          * the render function you have defined.
          */
         allEnemies.forEach(function(enemy) {
             enemy.render();
         });
-
+        player.renderText();
         player.render();
     }
 
@@ -161,7 +185,14 @@ var Engine = (function(global) {
      * those sorts of things. It's only called once by the init() method.
      */
     function reset() {
-        // noop
+      player.x = 200;
+      player.y = 350;
+      heart.x = -100;
+      allEnemies.forEach(function(enemy) {
+          enemy.x = 0;
+      });
+      // win.cancelAnimationFrame(requestAnimationFrameID);
+      // requestAnimationFrameID = win.requestAnimationFrame(main);
     }
 
     /* Go ahead and load all of the images we know we're going to need to
@@ -173,7 +204,12 @@ var Engine = (function(global) {
         'images/water-block.png',
         'images/grass-block.png',
         'images/enemy-bug.png',
-        'images/char-boy.png'
+        'images/char-boy.png',
+        'images/Gem Blue.png',
+        'images/Gem Green.png',
+        'images/Gem Orange.png',
+        'images/Star.png',
+        'images/Heart.png'
     ]);
     Resources.onReady(init);
 
